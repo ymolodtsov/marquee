@@ -1,0 +1,234 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10000000000000000000001 /* MarqueeTextEditApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000101 /* MarqueeTextEditApp.swift */; };
+		A10000000000000000000002 /* TextDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000102 /* TextDocument.swift */; };
+		A10000000000000000000003 /* EditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000103 /* EditorView.swift */; };
+		A10000000000000000000004 /* SyntaxTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000104 /* SyntaxTextView.swift */; };
+		A10000000000000000000005 /* SyntaxHighlighting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000105 /* SyntaxHighlighting.swift */; };
+		A10000000000000000000006 /* FocusedValues+Document.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000106 /* FocusedValues+Document.swift */; };
+		A10000000000000000000007 /* DuplicateDocumentAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000107 /* DuplicateDocumentAction.swift */; };
+		A10000000000000000000008 /* LineNumberRulerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000109 /* LineNumberRulerView.swift */; };
+		A10000000000000000000009 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000110 /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A10000000000000000000100 /* Marquee.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; path = Marquee.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10000000000000000000101 /* MarqueeTextEditApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarqueeTextEditApp.swift; sourceTree = "<group>"; };
+		A10000000000000000000102 /* TextDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextDocument.swift; sourceTree = "<group>"; };
+		A10000000000000000000103 /* EditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorView.swift; sourceTree = "<group>"; };
+		A10000000000000000000104 /* SyntaxTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyntaxTextView.swift; sourceTree = "<group>"; };
+		A10000000000000000000105 /* SyntaxHighlighting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyntaxHighlighting.swift; sourceTree = "<group>"; };
+		A10000000000000000000106 /* FocusedValues+Document.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FocusedValues+Document.swift"; sourceTree = "<group>"; };
+		A10000000000000000000107 /* DuplicateDocumentAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicateDocumentAction.swift; sourceTree = "<group>"; };
+		A10000000000000000000108 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A10000000000000000000109 /* LineNumberRulerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineNumberRulerView.swift; sourceTree = "<group>"; };
+		A10000000000000000000110 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A10000000000000000001000 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A10000000000000000002000 /* MarqueeTextEdit */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000002001 /* Sources */,
+				A10000000000000000002002 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A10000000000000000002001 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000101 /* MarqueeTextEditApp.swift */,
+				A10000000000000000000102 /* TextDocument.swift */,
+				A10000000000000000000103 /* EditorView.swift */,
+				A10000000000000000000104 /* SyntaxTextView.swift */,
+				A10000000000000000000105 /* SyntaxHighlighting.swift */,
+				A10000000000000000000106 /* FocusedValues+Document.swift */,
+				A10000000000000000000107 /* DuplicateDocumentAction.swift */,
+				A10000000000000000000108 /* Info.plist */,
+				A10000000000000000000109 /* LineNumberRulerView.swift */,
+				A10000000000000000000110 /* Assets.xcassets */,
+			);
+			path = Sources/MarqueeTextEditApp;
+			sourceTree = "<group>";
+		};
+		A10000000000000000002002 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000100 /* Marquee.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A10000000000000000003000 /* MarqueeTextEdit */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A10000000000000000003001 /* Build configuration list for PBXNativeTarget "MarqueeTextEdit" */;
+			buildPhases = (
+				A10000000000000000001001 /* Sources */,
+				A10000000000000000001000 /* Frameworks */,
+				A10000000000000000001002 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MarqueeTextEdit;
+			productName = Marquee;
+			productReference = A10000000000000000000100 /* Marquee.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A10000000000000000004000 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 9999;
+				LastUpgradeCheck = 9999;
+				TargetAttributes = {
+					A10000000000000000003000 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = A10000000000000000004001 /* Build configuration list for PBXProject "MarqueeTextEdit" */;
+			compatibilityVersion = "Xcode 15.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = A10000000000000000002000 /* MarqueeTextEdit */;
+			productRefGroup = A10000000000000000002002 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A10000000000000000003000 /* MarqueeTextEdit */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A10000000000000000001002 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000009 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A10000000000000000001001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000001 /* MarqueeTextEditApp.swift in Sources */,
+				A10000000000000000000002 /* TextDocument.swift in Sources */,
+				A10000000000000000000003 /* EditorView.swift in Sources */,
+				A10000000000000000000004 /* SyntaxTextView.swift in Sources */,
+				A10000000000000000000005 /* SyntaxHighlighting.swift in Sources */,
+				A10000000000000000000006 /* FocusedValues+Document.swift in Sources */,
+				A10000000000000000000007 /* DuplicateDocumentAction.swift in Sources */,
+				A10000000000000000000008 /* LineNumberRulerView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		A10000000000000000005000 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				INFOPLIST_FILE = Sources/MarqueeTextEditApp/Info.plist;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.marquee.textedit;
+				PRODUCT_NAME = Marquee;
+				SWIFT_VERSION = 5.9;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+			};
+			name = Debug;
+		};
+		A10000000000000000005001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				INFOPLIST_FILE = Sources/MarqueeTextEditApp/Info.plist;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.marquee.textedit;
+				PRODUCT_NAME = Marquee;
+				SWIFT_VERSION = 5.9;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+			};
+			name = Release;
+		};
+		A10000000000000000005002 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DEVELOPMENT_TEAM = "";
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		A10000000000000000005003 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DEVELOPMENT_TEAM = "";
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A10000000000000000003001 /* Build configuration list for PBXNativeTarget "MarqueeTextEdit" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A10000000000000000005000 /* Debug */,
+				A10000000000000000005001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A10000000000000000004001 /* Build configuration list for PBXProject "MarqueeTextEdit" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A10000000000000000005002 /* Debug */,
+				A10000000000000000005003 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A10000000000000000004000 /* Project object */;
+}

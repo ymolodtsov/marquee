@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>Marquee</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.marquee.textedit</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleVersion</key>
+    <string>3</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>CFBundleDocumentTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>Text and Code Files</string>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>LSHandlerRank</key>
+            <string>Default</string>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>txt</string>
+                <string>md</string>
+                <string>js</string>
+                <string>ts</string>
+                <string>php</string>
+                <string>py</string>
+                <string>rb</string>
+                <string>html</string>
+                <string>htm</string>
+                <string>css</string>
+                <string>xml</string>
+                <string>toml</string>
+                <string>json</string>
+            </array>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>public.plain-text</string>
+                <string>public.source-code</string>
+                <string>public.json</string>
+                <string>net.daringfireball.markdown</string>
+                <string>public.html</string>
+                <string>public.xml</string>
+                <string>public.css</string>
+                <string>com.netscape.javascript-source</string>
+            </array>
+        </dict>
+    </array>
+    <key>LSMinimumSystemVersion</key>
+    <string>13.0</string>
+</dict>
+</plist>
