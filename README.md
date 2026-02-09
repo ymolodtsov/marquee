@@ -1,7 +1,9 @@
-# MarqueeTextEdit
+# Marquee
 
 Minimal native macOS text editor with basic syntax highlighting for:
 - Markdown, JavaScript, TypeScript, HTML, CSS, XML, TOML, JSON
+
+Think "TextEdit for Code".
 
 ## Run
 
@@ -18,6 +20,8 @@ Open `MarqueeTextEdit.xcodeproj` in Xcode.
 ```sh
 swift build -c release
 ```
+
+Sorry, there's no binary, no sense in paying for Apple Developer Account just for this. 
 
 ## Notes
 
