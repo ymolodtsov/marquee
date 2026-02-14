@@ -5,6 +5,8 @@ Minimal native macOS text editor with basic syntax highlighting for:
 
 Think "TextEdit for Code".
 
+<img width="2486" height="2018" alt="CleanShot 2026-02-14 at 14 45 25@2x" src="https://github.com/user-attachments/assets/c16e31e6-7e2b-4b0c-a330-e97cfb813b36" />
+
 ## Run
 
 ```sh
