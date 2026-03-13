@@ -98,7 +98,8 @@ struct SyntaxTextView: NSViewRepresentable {
             context.coordinator.gutterView?.needsDisplay = true
         } else if context.coordinator.lastLanguage != language {
             if !isLargeFileMode, let storage = textView.textStorage {
-                SyntaxHighlighter.shared.apply(to: storage, language: language)
+                let visibleRange = context.coordinator.visibleCharacterRange()
+                SyntaxHighlighter.shared.apply(to: storage, language: language, in: visibleRange)
             }
         }
 
@@ -113,6 +114,7 @@ struct SyntaxTextView: NSViewRepresentable {
         var isLargeFileMode = false
         var lastLanguage: SyntaxLanguage = .plainText
         private var pendingHighlight: DispatchWorkItem?
+        private var pendingScrollHighlight: DispatchWorkItem?
         private var boundsObserver: NSObjectProtocol?
         private var textObserver: NSObjectProtocol?
         private var selectionObserver: NSObjectProtocol?
@@ -144,6 +146,7 @@ struct SyntaxTextView: NSViewRepresentable {
                 queue: .main
             ) { [weak self] _ in
                 self?.gutterView?.needsDisplay = true
+                self?.scheduleScrollHighlight()
             }
 
             textObserver = NotificationCenter.default.addObserver(
@@ -175,13 +178,35 @@ struct SyntaxTextView: NSViewRepresentable {
             let work = DispatchWorkItem { [weak self] in
                 guard let self, let textView = self.textView, let storage = textView.textStorage else { return }
                 guard SyntaxHighlighter.shared.shouldHighlight(textLength: storage.length) else { return }
+                let visibleRange = self.visibleCharacterRange()
                 let selection = textView.selectedRange()
-                SyntaxHighlighter.shared.apply(to: storage, language: self.parent.language)
+                SyntaxHighlighter.shared.apply(to: storage, language: self.parent.language, in: visibleRange)
                 textView.setSelectedRange(selection)
                 self.gutterView?.needsDisplay = true
             }
             pendingHighlight = work
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.08, execute: work)
+        }
+
+        private func scheduleScrollHighlight() {
+            guard !isLargeFileMode else { return }
+            pendingScrollHighlight?.cancel()
+            let work = DispatchWorkItem { [weak self] in
+                guard let self, let textView = self.textView, let storage = textView.textStorage else { return }
+                guard SyntaxHighlighter.shared.shouldHighlight(textLength: storage.length) else { return }
+                let visibleRange = self.visibleCharacterRange()
+                SyntaxHighlighter.shared.apply(to: storage, language: self.parent.language, in: visibleRange)
+            }
+            pendingScrollHighlight = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.03, execute: work)
+        }
+
+        func visibleCharacterRange() -> NSRange? {
+            guard let textView,
+                  let layoutManager = textView.layoutManager,
+                  let textContainer = textView.textContainer else { return nil }
+            let visibleGlyphRange = layoutManager.glyphRange(forBoundingRect: textView.visibleRect, in: textContainer)
+            return layoutManager.characterRange(forGlyphRange: visibleGlyphRange, actualGlyphRange: nil)
         }
     }
 }

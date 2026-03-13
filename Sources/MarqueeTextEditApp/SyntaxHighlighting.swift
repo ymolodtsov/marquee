@@ -7,6 +7,7 @@ enum SyntaxLanguage: String, CaseIterable, Identifiable {
     case php
     case python
     case ruby
+    case sql
     case html
     case css
     case xml
@@ -24,6 +25,7 @@ enum SyntaxLanguage: String, CaseIterable, Identifiable {
         case .php: return "PHP"
         case .python: return "Python"
         case .ruby: return "Ruby"
+        case .sql: return "SQL"
         case .html: return "HTML"
         case .css: return "CSS"
         case .xml: return "XML"
@@ -45,6 +47,7 @@ enum SyntaxLanguage: String, CaseIterable, Identifiable {
         case "php": return .php
         case "py": return .python
         case "rb": return .ruby
+        case "sql": return .sql
         case "html", "htm": return .html
         case "css": return .css
         case "xml": return .xml
@@ -63,7 +66,7 @@ struct SyntaxRule {
 final class SyntaxHighlighter {
     static let shared = SyntaxHighlighter()
     static let maxHighlightedCharacters = 2_000_000
-    private static let contextPadding = 2_048
+    private static let contextPadding = 4_096
 
     private let baseFont = NSFont.monospacedSystemFont(ofSize: 15, weight: .regular)
     private let baseColor = NSColor.labelColor
@@ -156,8 +159,8 @@ final class SyntaxHighlighter {
                 ("\\b\\d+(?:\\.\\d+)?\\b", [], numberColor),
                 ("\\b(def|class|return|if|elif|else|for|while|try|except|finally|raise|with|as|import|from|pass|break|continue|lambda|yield|async|await|global|nonlocal|in|is|not|and|or|None|True|False)\\b", [], keywordColor),
                 ("#.*", [], commentColor),
-                ("\"\"\"([\\s\\S]*?)\"\"\"", [], commentColor),
-                ("'''([\\s\\S]*?)'''", [], commentColor)
+                ("\"\"\"([\\s\\S]*?)\"\"\"", [], stringColor),
+                ("'''([\\s\\S]*?)'''", [], stringColor)
             ]
         case .ruby:
             rules = [
@@ -167,6 +170,15 @@ final class SyntaxHighlighter {
                 ("\\b(def|class|module|end|if|elsif|else|unless|while|until|for|in|do|begin|rescue|ensure|return|yield|super|self|require|include|extend|attr_reader|attr_writer|attr_accessor|true|false|nil)\\b", [], keywordColor),
                 ("@[A-Za-z_][A-Za-z0-9_]*", [], attributeColor),
                 ("#.*", [], commentColor)
+            ]
+        case .sql:
+            rules = [
+                ("'(?:''|[^'])*'", [], stringColor),
+                ("\\b\\d+(?:\\.\\d+)?\\b", [], numberColor),
+                ("\\b(SELECT|FROM|WHERE|INSERT|INTO|VALUES|UPDATE|SET|DELETE|JOIN|LEFT|RIGHT|INNER|OUTER|FULL|ON|GROUP|BY|ORDER|HAVING|LIMIT|OFFSET|DISTINCT|AS|AND|OR|NOT|NULL|IS|IN|BETWEEN|LIKE|EXISTS|CREATE|ALTER|DROP|TABLE|INDEX|VIEW|TRIGGER|PRIMARY|KEY|FOREIGN|REFERENCES|UNIQUE|DEFAULT|CHECK|CASE|WHEN|THEN|ELSE|END|UNION|ALL)\\b", [.caseInsensitive], keywordColor),
+                ("\\b(INT|INTEGER|BIGINT|SMALLINT|DECIMAL|NUMERIC|REAL|FLOAT|DOUBLE|BOOLEAN|CHAR|VARCHAR|TEXT|DATE|TIME|TIMESTAMP|BLOB|JSON)\\b", [.caseInsensitive], typeColor),
+                ("--.*", [], commentColor),
+                ("/\\*([\\s\\S]*?)\\*/", [], commentColor)
             ]
         case .html, .xml:
             rules = [
@@ -185,10 +197,13 @@ final class SyntaxHighlighter {
             ]
         case .markdown:
             rules = [
+                ("\\A---\\n[\\s\\S]*?\\n---", [], commentColor),
+                ("^[a-zA-Z_][a-zA-Z0-9_-]*(?=\\s*:)", [.anchorsMatchLines], attributeColor),
                 ("^#{1,6}\\s+.*", [.anchorsMatchLines], keywordColor),
+                ("```[\\s\\S]*?```", [], stringColor),
                 ("`[^`]+`", [], stringColor),
-                ("\\*\\*([^*]+)\\*\\*", [], typeColor),
-                ("\\*([^*]+)\\*", [], typeColor),
+                ("(?<!\\*)\\*\\*(?=\\S)(.+?)(?<=\\S)\\*\\*(?!\\*)", [], typeColor),
+                ("(?<!\\*)\\*(?=\\S)(.+?)(?<=\\S)\\*(?!\\*)", [], typeColor),
                 ("\\[[^\\]]+\\]\\([^\\)]+\\)", [], tagColor)
             ]
         case .toml:

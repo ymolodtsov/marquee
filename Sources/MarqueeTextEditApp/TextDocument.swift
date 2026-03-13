@@ -10,6 +10,7 @@ struct TextDocument: FileDocument {
             "public.html",
             "public.xml",
             "public.json",
+            "public.sql",
             "net.daringfireball.markdown",
             "com.netscape.javascript-source",
             "public.php-script",
@@ -23,7 +24,7 @@ struct TextDocument: FileDocument {
             }
         }
 
-        let extensions = ["md", "js", "ts", "php", "py", "rb", "html", "css", "xml", "toml", "json", "txt"]
+        let extensions = ["md", "js", "ts", "php", "py", "rb", "sql", "html", "css", "xml", "toml", "json", "txt"]
         for ext in extensions {
             if let type = UTType(filenameExtension: ext, conformingTo: .sourceCode) ??
                 UTType(filenameExtension: ext, conformingTo: .plainText) ??

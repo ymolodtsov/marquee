@@ -11,9 +11,9 @@
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleVersion</key>
-    <string>3</string>
+    <string>5</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0</string>
+    <string>1.4</string>
     <key>CFBundleDocumentTypes</key>
     <array>
         <dict>
@@ -32,6 +32,7 @@
                 <string>php</string>
                 <string>py</string>
                 <string>rb</string>
+                <string>sql</string>
                 <string>html</string>
                 <string>htm</string>
                 <string>css</string>
