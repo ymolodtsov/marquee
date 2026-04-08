@@ -1,21 +1,31 @@
 # Marquee
 
-Minimal native macOS text editor with basic syntax highlighting for:
-- Markdown, JavaScript, TypeScript, HTML, CSS, XML, TOML, JSON
+Minimal native macOS text editor with syntax highlighting. TextEdit for code.
 
-Think "TextEdit for Code".
+Supports Markdown, JavaScript, TypeScript, PHP, Python, Ruby, SQL, HTML, CSS, XML, TOML, JSON, and plain text — with automatic language detection from file extension and a toolbar picker for manual override.
 
 <img width="2486" height="2018" alt="CleanShot 2026-02-14 at 14 45 25@2x" src="https://github.com/user-attachments/assets/c16e31e6-7e2b-4b0c-a330-e97cfb813b36" />
 
+## Features
+
+- **Tabs** — native macOS tab bar (`Cmd+T` to open, `Cmd+1`/`2` to switch, `Cmd+Shift+[`/`]` to navigate)
+- **Search & Replace** — `Cmd+F` to search, `Cmd+Option+F` for search & replace
+- **Duplicate** — `Cmd+D` duplicates the current document
+- **Syntax picker** — toolbar dropdown or Syntax menu to switch language manually
+- **Demand-driven highlighting** — only highlights visible text for performance
+- **Markdown front matter** — recognizes YAML front matter blocks
+- **Opens everything** — registers for 100+ file extensions out of the box
+- Native document-based app, system color mode, transparent titlebar
+
 ## Run
+
+Requires macOS Tahoe (26).
 
 ```sh
 swift run
 ```
 
-## Xcode
-
-Open `MarqueeTextEdit.xcodeproj` in Xcode.
+Or open `MarqueeTextEdit.xcodeproj` in Xcode.
 
 ## Build
 
@@ -23,10 +33,4 @@ Open `MarqueeTextEdit.xcodeproj` in Xcode.
 swift build -c release
 ```
 
-Sorry, there's no binary, no sense in paying for Apple Developer Account just for this. 
-
-## Notes
-
-- Uses a document-based app (`DocumentGroup`) with native macOS tabbing support.
-- Follows system color mode and uses native controls.
-- Duplicate command creates a copy of the current document (or a temp copy for untitled files).
+No signed binary — not paying for an Apple Developer Account for this.
