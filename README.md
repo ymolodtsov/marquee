@@ -4,7 +4,8 @@ Minimal native macOS text editor with syntax highlighting. TextEdit for code.
 
 Supports Markdown, JavaScript, TypeScript, PHP, Python, Ruby, SQL, HTML, CSS, XML, TOML, JSON, and plain text — with automatic language detection from file extension and a toolbar picker for manual override.
 
-<img width="2486" height="2018" alt="CleanShot 2026-02-14 at 14 45 25@2x" src="https://github.com/user-attachments/assets/c16e31e6-7e2b-4b0c-a330-e97cfb813b36" />
+<img width="900" height="701" alt="marquee" src="https://github.com/user-attachments/assets/51b40c9f-8af8-432f-b53d-5e03b4dc06b7" />
+
 
 ## Features
 
