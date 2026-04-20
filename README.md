@@ -18,20 +18,26 @@ Supports Markdown, JavaScript, TypeScript, PHP, Python, Ruby, SQL, HTML, CSS, XM
 - **Opens everything** — registers for 100+ file extensions out of the box
 - Native document-based app, system color mode, transparent titlebar
 
-## Run
+## Install
 
-Requires macOS Tahoe (26).
+Requires macOS Tahoe (26). Download `Marquee.app.zip` from the [latest release](https://github.com/ymolodtsov/marquee/releases/latest), unzip, and move to `/Applications`.
+
+The app is not signed with an Apple Developer certificate. macOS will quarantine it on first launch. To remove the quarantine flag:
+
+```sh
+xattr -d com.apple.quarantine /Applications/Marquee.app
+```
+
+Then open normally.
+
+## Build from source
 
 ```sh
 swift run
 ```
 
-Or open `MarqueeTextEdit.xcodeproj` in Xcode.
-
-## Build
+Or open `MarqueeTextEdit.xcodeproj` in Xcode. To build a release binary:
 
 ```sh
 swift build -c release
 ```
-
-No signed binary — not paying for an Apple Developer Account for this.
