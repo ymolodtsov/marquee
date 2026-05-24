@@ -6,6 +6,7 @@ struct MarqueeApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @FocusedValue(\.duplicateDocumentHandler) private var duplicateHandler
     @FocusedValue(\.syntaxLanguageHandler) private var syntaxHandler
+    @FocusedValue(\.previewHandler) private var previewHandler
 
     var body: some Scene {
         DocumentGroup(newDocument: TextDocument()) { file in
@@ -78,6 +79,14 @@ struct MarqueeApp: App {
             }
 
             CommandMenu("Syntax") {
+                Button(previewHandler?.isShowingPreview == true ? "Hide Preview" : "Show Preview") {
+                    previewHandler?.togglePreview()
+                }
+                .keyboardShortcut("p", modifiers: [.command, .shift])
+                .disabled(previewHandler?.isMarkdown != true)
+
+                Divider()
+
                 ForEach(SyntaxLanguage.allCases) { language in
                     Toggle(language.displayName, isOn: Binding(
                         get: { syntaxHandler?.currentLanguage == language },
@@ -91,6 +100,7 @@ struct MarqueeApp: App {
                 }
             }
         }
+        .windowToolbarStyle(.unified)
     }
 
     private func canSelectTab(at index: Int) -> Bool {
@@ -139,7 +149,24 @@ struct MarqueeApp: App {
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    private var windowObserver: NSObjectProtocol?
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSWindow.allowsAutomaticWindowTabbing = true
+
+        windowObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didBecomeMainNotification,
+            object: nil,
+            queue: .main
+        ) { notification in
+            guard let window = notification.object as? NSWindow else { return }
+            window.titlebarAppearsTransparent = true
+            window.styleMask.insert(.fullSizeContentView)
+        }
+
+        for window in NSApp.windows {
+            window.titlebarAppearsTransparent = true
+            window.styleMask.insert(.fullSizeContentView)
+        }
     }
 }

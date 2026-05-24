@@ -16,6 +16,7 @@
 		A10000000000000000000007 /* DuplicateDocumentAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000107 /* DuplicateDocumentAction.swift */; };
 		A10000000000000000000008 /* LineNumberRulerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000109 /* LineNumberRulerView.swift */; };
 		A10000000000000000000009 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000110 /* Assets.xcassets */; };
+		A10000000000000000000010 /* MarkdownPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000111 /* MarkdownPreviewView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +31,7 @@
 		A10000000000000000000108 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A10000000000000000000109 /* LineNumberRulerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineNumberRulerView.swift; sourceTree = "<group>"; };
 		A10000000000000000000110 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A10000000000000000000111 /* MarkdownPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownPreviewView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -63,6 +65,7 @@
 				A10000000000000000000107 /* DuplicateDocumentAction.swift */,
 				A10000000000000000000108 /* Info.plist */,
 				A10000000000000000000109 /* LineNumberRulerView.swift */,
+				A10000000000000000000111 /* MarkdownPreviewView.swift */,
 				A10000000000000000000110 /* Assets.xcassets */,
 			);
 			path = Sources/MarqueeTextEditApp;
@@ -152,6 +155,7 @@
 				A10000000000000000000006 /* FocusedValues+Document.swift in Sources */,
 				A10000000000000000000007 /* DuplicateDocumentAction.swift in Sources */,
 				A10000000000000000000008 /* LineNumberRulerView.swift in Sources */,
+				A10000000000000000000010 /* MarkdownPreviewView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -166,10 +170,10 @@
 				ENABLE_PREVIEWS = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				INFOPLIST_FILE = Sources/MarqueeTextEditApp/Info.plist;
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.marquee.textedit;
 				PRODUCT_NAME = Marquee;
-				SWIFT_VERSION = 5.9;
+				SWIFT_VERSION = 5.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 			};
 			name = Debug;
@@ -181,10 +185,10 @@
 				DEVELOPMENT_TEAM = "";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				INFOPLIST_FILE = Sources/MarqueeTextEditApp/Info.plist;
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.marquee.textedit;
 				PRODUCT_NAME = Marquee;
-				SWIFT_VERSION = 5.9;
+				SWIFT_VERSION = 5.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 			};
 			name = Release;
@@ -193,8 +197,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				DEVELOPMENT_TEAM = "";
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				SWIFT_VERSION = 5.9;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
 		};
@@ -202,8 +206,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				DEVELOPMENT_TEAM = "";
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				SWIFT_VERSION = 5.9;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};

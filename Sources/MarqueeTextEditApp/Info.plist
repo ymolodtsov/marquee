@@ -11,9 +11,9 @@
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleVersion</key>
-    <string>5</string>
+    <string>7</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.4</string>
+    <string>2.1</string>
     <key>CFBundleDocumentTypes</key>
     <array>
         <dict>
@@ -27,8 +27,13 @@
             <array>
                 <string>txt</string>
                 <string>md</string>
+                <string>mdx</string>
                 <string>js</string>
+                <string>jsx</string>
                 <string>ts</string>
+                <string>tsx</string>
+                <string>mjs</string>
+                <string>cjs</string>
                 <string>php</string>
                 <string>py</string>
                 <string>rb</string>
@@ -36,24 +41,141 @@
                 <string>html</string>
                 <string>htm</string>
                 <string>css</string>
+                <string>scss</string>
+                <string>sass</string>
+                <string>less</string>
                 <string>xml</string>
                 <string>toml</string>
                 <string>json</string>
+                <string>jsonc</string>
+                <string>yaml</string>
+                <string>yml</string>
+                <string>svg</string>
+                <string>csv</string>
+                <string>tsv</string>
+                <string>log</string>
+                <string>env</string>
+                <string>gitignore</string>
+                <string>gitattributes</string>
+                <string>editorconfig</string>
+                <string>swift</string>
+                <string>go</string>
+                <string>rs</string>
+                <string>java</string>
+                <string>kt</string>
+                <string>kts</string>
+                <string>scala</string>
+                <string>c</string>
+                <string>h</string>
+                <string>cpp</string>
+                <string>cc</string>
+                <string>cxx</string>
+                <string>hpp</string>
+                <string>hxx</string>
+                <string>m</string>
+                <string>mm</string>
+                <string>cs</string>
+                <string>fs</string>
+                <string>sh</string>
+                <string>bash</string>
+                <string>zsh</string>
+                <string>fish</string>
+                <string>ps1</string>
+                <string>bat</string>
+                <string>cmd</string>
+                <string>lua</string>
+                <string>r</string>
+                <string>R</string>
+                <string>pl</string>
+                <string>pm</string>
+                <string>ex</string>
+                <string>exs</string>
+                <string>erl</string>
+                <string>hrl</string>
+                <string>hs</string>
+                <string>lhs</string>
+                <string>ml</string>
+                <string>mli</string>
+                <string>clj</string>
+                <string>cljs</string>
+                <string>dart</string>
+                <string>vue</string>
+                <string>svelte</string>
+                <string>astro</string>
+                <string>graphql</string>
+                <string>gql</string>
+                <string>proto</string>
+                <string>tf</string>
+                <string>hcl</string>
+                <string>dockerfile</string>
+                <string>dockerignore</string>
+                <string>makefile</string>
+                <string>cmake</string>
+                <string>gradle</string>
+                <string>properties</string>
+                <string>ini</string>
+                <string>cfg</string>
+                <string>conf</string>
+                <string>config</string>
+                <string>lock</string>
+                <string>diff</string>
+                <string>patch</string>
+                <string>rst</string>
+                <string>tex</string>
+                <string>bib</string>
+                <string>zig</string>
+                <string>nim</string>
+                <string>v</string>
+                <string>d</string>
+                <string>sol</string>
+                <string>prisma</string>
+                <string>wasm</string>
+                <string>wat</string>
             </array>
             <key>LSItemContentTypes</key>
             <array>
                 <string>public.plain-text</string>
                 <string>public.source-code</string>
+                <string>public.script</string>
+                <string>public.shell-script</string>
                 <string>public.json</string>
                 <string>net.daringfireball.markdown</string>
                 <string>public.html</string>
                 <string>public.xml</string>
                 <string>public.css</string>
                 <string>com.netscape.javascript-source</string>
+                <string>public.yaml</string>
+                <string>public.svg-image</string>
+                <string>public.comma-separated-values-text</string>
+                <string>public.c-source</string>
+                <string>public.c-header</string>
+                <string>public.c-plus-plus-source</string>
+                <string>public.c-plus-plus-header</string>
+                <string>public.objective-c-source</string>
+                <string>public.objective-c-plus-plus-source</string>
+                <string>public.swift-source</string>
+                <string>com.apple.property-list</string>
+                <string>com.sun.java-source</string>
+                <string>public.ruby-script</string>
+                <string>public.python-script</string>
+                <string>public.perl-script</string>
+                <string>public.php-script</string>
+            </array>
+        </dict>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>Any File</string>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>LSHandlerRank</key>
+            <string>Alternate</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>public.data</string>
             </array>
         </dict>
     </array>
     <key>LSMinimumSystemVersion</key>
-    <string>13.0</string>
+    <string>26.0</string>
 </dict>
 </plist>

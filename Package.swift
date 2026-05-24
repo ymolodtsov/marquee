@@ -1,10 +1,10 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 6.2
 import PackageDescription
 
 let package = Package(
     name: "MarqueeTextEdit",
     platforms: [
-        .macOS(.v13)
+        .macOS(.v26)
     ],
     products: [
         .executable(
@@ -15,7 +15,8 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "MarqueeTextEditApp",
-            path: "Sources/MarqueeTextEditApp"
+            path: "Sources/MarqueeTextEditApp",
+            swiftSettings: [.swiftLanguageMode(.v5)]
         )
     ]
 )

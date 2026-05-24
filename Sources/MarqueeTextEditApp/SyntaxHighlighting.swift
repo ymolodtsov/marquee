@@ -41,18 +41,18 @@ enum SyntaxLanguage: String, CaseIterable, Identifiable {
         }
 
         switch ext {
-        case "md": return .markdown
-        case "js": return .javascript
-        case "ts": return .typescript
+        case "md", "mdx": return .markdown
+        case "js", "jsx", "mjs", "cjs": return .javascript
+        case "ts", "tsx": return .typescript
         case "php": return .php
         case "py": return .python
         case "rb": return .ruby
         case "sql": return .sql
-        case "html", "htm": return .html
-        case "css": return .css
-        case "xml": return .xml
-        case "toml": return .toml
-        case "json": return .json
+        case "html", "htm", "vue", "svelte", "astro": return .html
+        case "css", "scss", "sass", "less": return .css
+        case "xml", "svg", "graphql", "gql", "proto": return .xml
+        case "toml", "yaml", "yml", "ini", "cfg", "conf", "config", "properties", "env", "editorconfig": return .toml
+        case "json", "jsonc": return .json
         default: return .plainText
         }
     }
@@ -71,13 +71,23 @@ final class SyntaxHighlighter {
     private let baseFont = NSFont.monospacedSystemFont(ofSize: 15, weight: .regular)
     private let baseColor = NSColor.labelColor
 
-    private let keywordColor = NSColor.systemIndigo
-    private let typeColor = NSColor.systemTeal
-    private let stringColor = NSColor.systemPurple
-    private let numberColor = NSColor.systemBlue
-    private let commentColor = NSColor.systemGreen
-    private let tagColor = NSColor.systemBlue
-    private let attributeColor = NSColor.systemPurple
+    // Adaptive colors: (light mode, dark mode)
+    // Palette inspired by GitHub, One Dark, and Catppuccin — muted, high-contrast, easy on the eyes.
+    private let keywordColor = adaptive(light: (0.66, 0.05, 0.57), dark: (0.77, 0.56, 0.96))       // plum → soft lavender
+    private let typeColor = adaptive(light: (0.0, 0.47, 0.46), dark: (0.53, 0.87, 0.85))            // deep teal → mint
+    private let stringColor = adaptive(light: (0.64, 0.25, 0.0), dark: (0.90, 0.72, 0.45))          // warm brown → soft amber
+    private let numberColor = adaptive(light: (0.0, 0.35, 0.73), dark: (0.56, 0.78, 0.98))          // cobalt → soft sky blue
+    private let commentColor = adaptive(light: (0.47, 0.51, 0.55), dark: (0.45, 0.50, 0.55))        // muted gray both modes
+    private let tagColor = adaptive(light: (0.84, 0.18, 0.15), dark: (0.95, 0.55, 0.50))            // crimson → soft coral
+    private let attributeColor = adaptive(light: (0.75, 0.38, 0.0), dark: (0.95, 0.68, 0.38))       // burnt orange → peach
+
+    private static func adaptive(light: (CGFloat, CGFloat, CGFloat), dark: (CGFloat, CGFloat, CGFloat)) -> NSColor {
+        NSColor(name: nil) { appearance in
+            let isDark = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+            let c = isDark ? dark : light
+            return NSColor(srgbRed: c.0, green: c.1, blue: c.2, alpha: 1.0)
+        }
+    }
 
     private var cache: [SyntaxLanguage: [SyntaxRule]] = [:]
 
@@ -87,40 +97,35 @@ final class SyntaxHighlighter {
         textLength <= Self.maxHighlightedCharacters
     }
 
-    func apply(to storage: NSTextStorage, language: SyntaxLanguage, in requestedRange: NSRange? = nil) {
-        let fullRange = NSRange(location: 0, length: storage.length)
+    func apply(to layoutManager: NSLayoutManager, source: String, language: SyntaxLanguage, in requestedRange: NSRange? = nil) {
+        let totalLength = (source as NSString).length
+        let fullRange = NSRange(location: 0, length: totalLength)
         guard fullRange.length > 0 else { return }
         let range = effectiveRange(for: requestedRange, in: fullRange)
 
-        storage.beginEditing()
-        storage.setAttributes([
-            .font: baseFont,
-            .foregroundColor: baseColor
-        ], range: range)
+        layoutManager.removeTemporaryAttribute(.foregroundColor, forCharacterRange: range)
 
-        guard language != .plainText else {
-            storage.endEditing()
-            return
-        }
+        guard language != .plainText else { return }
 
         let rules = rulesForLanguage(language)
-        let source = storage.string
 
         for rule in rules {
             rule.regex.enumerateMatches(in: source, options: [], range: range) { match, _, _ in
                 guard let match else { return }
-                storage.addAttribute(.foregroundColor, value: rule.color, range: match.range)
+                layoutManager.addTemporaryAttribute(.foregroundColor, value: rule.color, forCharacterRange: match.range)
             }
         }
+    }
 
-        storage.endEditing()
+    func effectiveRange(for requestedRange: NSRange, totalLength: Int) -> NSRange {
+        let start = max(requestedRange.location - Self.contextPadding, 0)
+        let end = min(NSMaxRange(requestedRange) + Self.contextPadding, totalLength)
+        return NSRange(location: start, length: max(end - start, 0))
     }
 
     private func effectiveRange(for requestedRange: NSRange?, in fullRange: NSRange) -> NSRange {
         guard let requestedRange else { return fullRange }
-        let start = max(requestedRange.location - Self.contextPadding, 0)
-        let end = min(NSMaxRange(requestedRange) + Self.contextPadding, NSMaxRange(fullRange))
-        return NSRange(location: start, length: max(end - start, 0))
+        return effectiveRange(for: requestedRange, totalLength: NSMaxRange(fullRange))
     }
 
     private func rulesForLanguage(_ language: SyntaxLanguage) -> [SyntaxRule] {

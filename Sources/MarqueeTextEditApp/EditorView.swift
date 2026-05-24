@@ -5,6 +5,7 @@ struct EditorView: View {
     let fileURL: URL?
 
     @State private var selectedLanguage: SyntaxLanguage
+    @State private var showingPreview = false
 
     init(document: Binding<TextDocument>, fileURL: URL?) {
         self._document = document
@@ -13,23 +14,39 @@ struct EditorView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            SyntaxTextView(text: $document.text, language: selectedLanguage)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            Divider()
-
-            HStack {
-                Text(selectedLanguage.displayName)
-                    .font(.system(size: 11, weight: .regular, design: .default))
-                    .foregroundStyle(Color.secondary)
-                Spacer()
+        Group {
+            if showingPreview && selectedLanguage == .markdown {
+                MarkdownPreviewView(text: document.text)
+            } else {
+                SyntaxTextView(text: $document.text, language: selectedLanguage)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(Color(NSColor.windowBackgroundColor))
         }
-        .background(Color(NSColor.textBackgroundColor))
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .toolbar {
+            if selectedLanguage == .markdown {
+                ToolbarItem(placement: .automatic) {
+                    Button {
+                        showingPreview.toggle()
+                    } label: {
+                        Image(systemName: showingPreview ? "eye.fill" : "eye")
+                    }
+                    .help(showingPreview ? "Hide Preview" : "Show Preview")
+                }
+            }
+            ToolbarItem(placement: .automatic) {
+                Picker("Syntax", selection: $selectedLanguage) {
+                    ForEach(SyntaxLanguage.allCases) { language in
+                        Text(language.displayName).tag(language)
+                    }
+                }
+                .labelsHidden()
+            }
+        }
+        .onChange(of: selectedLanguage) {
+            if selectedLanguage != .markdown {
+                showingPreview = false
+            }
+        }
         .focusedValue(\.duplicateDocumentHandler, DuplicateDocumentHandler {
             Task {
                 await DuplicateDocumentAction.duplicate(text: document.text, fileURL: fileURL)
@@ -40,6 +57,11 @@ struct EditorView: View {
             setLanguage: { language in
                 selectedLanguage = language
             }
+        ))
+        .focusedValue(\.previewHandler, PreviewHandler(
+            isMarkdown: selectedLanguage == .markdown,
+            isShowingPreview: showingPreview,
+            togglePreview: { showingPreview.toggle() }
         ))
     }
 }

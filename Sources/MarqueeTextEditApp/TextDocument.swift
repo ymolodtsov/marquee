@@ -3,7 +3,7 @@ import UniformTypeIdentifiers
 
 struct TextDocument: FileDocument {
     static var readableContentTypes: [UTType] = {
-        var types: Set<UTType> = [.plainText, .utf8PlainText, .sourceCode]
+        var types: Set<UTType> = [.plainText, .utf8PlainText, .sourceCode, .data]
 
         let knownIdentifiers = [
             "public.css",
@@ -11,11 +11,26 @@ struct TextDocument: FileDocument {
             "public.xml",
             "public.json",
             "public.sql",
+            "public.script",
+            "public.shell-script",
+            "public.c-source",
+            "public.c-header",
+            "public.c-plus-plus-source",
+            "public.c-plus-plus-header",
+            "public.objective-c-source",
+            "public.objective-c-plus-plus-source",
+            "public.swift-source",
+            "com.apple.property-list",
+            "com.sun.java-source",
             "net.daringfireball.markdown",
             "com.netscape.javascript-source",
             "public.php-script",
             "public.python-script",
-            "public.ruby-script"
+            "public.ruby-script",
+            "public.perl-script",
+            "public.yaml",
+            "public.svg-image",
+            "public.comma-separated-values-text"
         ]
 
         for identifier in knownIdentifiers {
@@ -24,7 +39,30 @@ struct TextDocument: FileDocument {
             }
         }
 
-        let extensions = ["md", "js", "ts", "php", "py", "rb", "sql", "html", "css", "xml", "toml", "json", "txt"]
+        let extensions = [
+            "txt", "md", "mdx",
+            "js", "jsx", "ts", "tsx", "mjs", "cjs",
+            "html", "htm", "css", "scss", "sass", "less",
+            "json", "jsonc", "xml", "yaml", "yml", "toml",
+            "svg", "csv", "tsv", "log",
+            "env", "gitignore", "gitattributes", "editorconfig",
+            "swift", "go", "rs", "java", "kt", "kts", "scala",
+            "c", "h", "cpp", "cc", "cxx", "hpp", "hxx", "m", "mm",
+            "cs", "fs",
+            "py", "rb", "php", "pl", "pm", "lua", "r",
+            "sh", "bash", "zsh", "fish", "ps1", "bat", "cmd",
+            "sql",
+            "ex", "exs", "erl", "hrl", "hs", "lhs",
+            "ml", "mli", "clj", "cljs",
+            "dart", "vue", "svelte", "astro",
+            "graphql", "gql", "proto",
+            "tf", "hcl", "dockerfile", "dockerignore",
+            "makefile", "cmake", "gradle",
+            "properties", "ini", "cfg", "conf", "config",
+            "lock", "diff", "patch",
+            "rst", "tex", "bib",
+            "zig", "nim", "v", "d", "sol", "prisma",
+        ]
         for ext in extensions {
             if let type = UTType(filenameExtension: ext, conformingTo: .sourceCode) ??
                 UTType(filenameExtension: ext, conformingTo: .plainText) ??

@@ -9,12 +9,22 @@ struct SyntaxLanguageHandler {
     let setLanguage: (SyntaxLanguage) -> Void
 }
 
+struct PreviewHandler {
+    let isMarkdown: Bool
+    let isShowingPreview: Bool
+    let togglePreview: () -> Void
+}
+
 private struct DuplicateDocumentHandlerKey: FocusedValueKey {
     typealias Value = DuplicateDocumentHandler
 }
 
 private struct SyntaxLanguageHandlerKey: FocusedValueKey {
     typealias Value = SyntaxLanguageHandler
+}
+
+private struct PreviewHandlerKey: FocusedValueKey {
+    typealias Value = PreviewHandler
 }
 
 extension FocusedValues {
@@ -26,5 +36,10 @@ extension FocusedValues {
     var syntaxLanguageHandler: SyntaxLanguageHandler? {
         get { self[SyntaxLanguageHandlerKey.self] }
         set { self[SyntaxLanguageHandlerKey.self] = newValue }
+    }
+
+    var previewHandler: PreviewHandler? {
+        get { self[PreviewHandlerKey.self] }
+        set { self[PreviewHandlerKey.self] = newValue }
     }
 }

@@ -28,6 +28,7 @@ struct SyntaxTextView: NSViewRepresentable {
         }
 
         textView.isRichText = false
+        textView.usesFontPanel = false
         textView.isEditable = true
         textView.isSelectable = true
         textView.usesFindBar = true
@@ -61,8 +62,8 @@ struct SyntaxTextView: NSViewRepresentable {
         context.coordinator.isLargeFileMode = isLargeFileMode
         context.coordinator.attachObservers(scrollView: scrollView)
 
-        if !isLargeFileMode, let storage = textView.textStorage {
-            SyntaxHighlighter.shared.apply(to: storage, language: language)
+        if !isLargeFileMode, let lm = textView.layoutManager {
+            SyntaxHighlighter.shared.apply(to: lm, source: textView.string, language: language)
         }
 
         DispatchQueue.main.async {
@@ -90,16 +91,18 @@ struct SyntaxTextView: NSViewRepresentable {
             context.coordinator.isProgrammaticUpdate = true
             textView.string = text
             context.coordinator.isProgrammaticUpdate = false
+            context.coordinator.highlightedRange = nil
             textView.setSelectedRange(NSRange(location: 0, length: 0))
             textView.scrollRangeToVisible(NSRange(location: 0, length: 0))
-            if !isLargeFileMode, let storage = textView.textStorage {
-                SyntaxHighlighter.shared.apply(to: storage, language: language)
+            if !isLargeFileMode, let lm = textView.layoutManager {
+                SyntaxHighlighter.shared.apply(to: lm, source: textView.string, language: language)
             }
             context.coordinator.gutterView?.needsDisplay = true
         } else if context.coordinator.lastLanguage != language {
-            if !isLargeFileMode, let storage = textView.textStorage {
+            context.coordinator.highlightedRange = nil
+            if !isLargeFileMode, let lm = textView.layoutManager {
                 let visibleRange = context.coordinator.visibleCharacterRange()
-                SyntaxHighlighter.shared.apply(to: storage, language: language, in: visibleRange)
+                SyntaxHighlighter.shared.apply(to: lm, source: textView.string, language: language, in: visibleRange)
             }
         }
 
@@ -114,7 +117,7 @@ struct SyntaxTextView: NSViewRepresentable {
         var isLargeFileMode = false
         var lastLanguage: SyntaxLanguage = .plainText
         private var pendingHighlight: DispatchWorkItem?
-        private var pendingScrollHighlight: DispatchWorkItem?
+        fileprivate var highlightedRange: NSRange?
         private var boundsObserver: NSObjectProtocol?
         private var textObserver: NSObjectProtocol?
         private var selectionObserver: NSObjectProtocol?
@@ -146,7 +149,7 @@ struct SyntaxTextView: NSViewRepresentable {
                 queue: .main
             ) { [weak self] _ in
                 self?.gutterView?.needsDisplay = true
-                self?.scheduleScrollHighlight()
+                self?.applyScrollHighlightIfNeeded()
             }
 
             textObserver = NotificationCenter.default.addObserver(
@@ -176,29 +179,46 @@ struct SyntaxTextView: NSViewRepresentable {
             guard !isLargeFileMode else { return }
             pendingHighlight?.cancel()
             let work = DispatchWorkItem { [weak self] in
-                guard let self, let textView = self.textView, let storage = textView.textStorage else { return }
-                guard SyntaxHighlighter.shared.shouldHighlight(textLength: storage.length) else { return }
+                guard let self, let textView = self.textView, let lm = textView.layoutManager else { return }
+                let source = textView.string
+                guard SyntaxHighlighter.shared.shouldHighlight(textLength: (source as NSString).length) else { return }
                 let visibleRange = self.visibleCharacterRange()
-                let selection = textView.selectedRange()
-                SyntaxHighlighter.shared.apply(to: storage, language: self.parent.language, in: visibleRange)
-                textView.setSelectedRange(selection)
+                self.highlightedRange = nil
+                SyntaxHighlighter.shared.apply(to: lm, source: source, language: self.parent.language, in: visibleRange)
+                if let visibleRange {
+                    self.highlightedRange = SyntaxHighlighter.shared.effectiveRange(for: visibleRange, totalLength: (source as NSString).length)
+                }
                 self.gutterView?.needsDisplay = true
             }
             pendingHighlight = work
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.08, execute: work)
         }
 
-        private func scheduleScrollHighlight() {
-            guard !isLargeFileMode else { return }
-            pendingScrollHighlight?.cancel()
-            let work = DispatchWorkItem { [weak self] in
-                guard let self, let textView = self.textView, let storage = textView.textStorage else { return }
-                guard SyntaxHighlighter.shared.shouldHighlight(textLength: storage.length) else { return }
-                let visibleRange = self.visibleCharacterRange()
-                SyntaxHighlighter.shared.apply(to: storage, language: self.parent.language, in: visibleRange)
+        private func applyScrollHighlightIfNeeded() {
+            guard !isLargeFileMode,
+                  let textView, let lm = textView.layoutManager else { return }
+            let source = textView.string
+            let totalLength = (source as NSString).length
+            guard SyntaxHighlighter.shared.shouldHighlight(textLength: totalLength) else { return }
+            guard let visibleRange = visibleCharacterRange() else { return }
+
+            let needed = SyntaxHighlighter.shared.effectiveRange(for: visibleRange, totalLength: totalLength)
+
+            if let prev = highlightedRange,
+               prev.location <= needed.location,
+               NSMaxRange(prev) >= NSMaxRange(needed) {
+                return
             }
-            pendingScrollHighlight = work
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.03, execute: work)
+
+            SyntaxHighlighter.shared.apply(to: lm, source: source, language: parent.language, in: visibleRange)
+
+            if let prev = highlightedRange {
+                let unionStart = min(prev.location, needed.location)
+                let unionEnd = max(NSMaxRange(prev), NSMaxRange(needed))
+                highlightedRange = NSRange(location: unionStart, length: unionEnd - unionStart)
+            } else {
+                highlightedRange = needed
+            }
         }
 
         func visibleCharacterRange() -> NSRange? {
