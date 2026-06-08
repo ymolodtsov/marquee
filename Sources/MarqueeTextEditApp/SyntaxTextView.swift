@@ -5,9 +5,15 @@ struct SyntaxTextView: NSViewRepresentable {
     @Binding var text: String
     let language: SyntaxLanguage
     private static let largeFileThresholdBytes = 5_000_000
+    private static let largeFileUndoLimit = 50
 
     private static func isLargeFile(_ text: String) -> Bool {
         text.lengthOfBytes(using: .utf8) >= largeFileThresholdBytes
+    }
+
+    private static func configureUndo(for textView: NSTextView, isLargeFileMode: Bool) {
+        textView.allowsUndo = true
+        textView.undoManager?.levelsOfUndo = isLargeFileMode ? largeFileUndoLimit : 0
     }
 
     func makeCoordinator() -> Coordinator {
@@ -50,14 +56,17 @@ struct SyntaxTextView: NSViewRepresentable {
         textView.string = text
         textView.delegate = context.coordinator
 
-        let gutterView = LineNumberGutterView(textView: textView)
+        let lineIndex = LineNumberIndex(text: textView.string)
+        let gutterView = LineNumberGutterView(textView: textView, lineIndex: lineIndex)
         let container = EditorContainerView(gutterView: gutterView, scrollView: scrollView)
         let isLargeFileMode = Self.isLargeFile(text)
-        container.setShowsLineNumbers(!isLargeFileMode)
-        textView.allowsUndo = !isLargeFileMode
+        container.setShowsLineNumbers(true)
+        Self.configureUndo(for: textView, isLargeFileMode: isLargeFileMode)
 
         context.coordinator.textView = textView
         context.coordinator.gutterView = gutterView
+        context.coordinator.lineIndex = lineIndex
+        context.coordinator.lastSyncedText = text
         context.coordinator.lastLanguage = language
         context.coordinator.isLargeFileMode = isLargeFileMode
         context.coordinator.attachObservers(scrollView: scrollView)
@@ -70,6 +79,10 @@ struct SyntaxTextView: NSViewRepresentable {
             textView.setSelectedRange(NSRange(location: 0, length: 0))
             textView.scrollRangeToVisible(NSRange(location: 0, length: 0))
             textView.window?.makeFirstResponder(textView)
+            Self.configureUndo(for: textView, isLargeFileMode: isLargeFileMode)
+            if isLargeFileMode {
+                context.coordinator.scheduleHighlight()
+            }
             gutterView.needsDisplay = true
         }
 
@@ -83,24 +96,29 @@ struct SyntaxTextView: NSViewRepresentable {
 
         if context.coordinator.isLargeFileMode != isLargeFileMode {
             context.coordinator.isLargeFileMode = isLargeFileMode
-            textView.allowsUndo = !isLargeFileMode
-            nsView.setShowsLineNumbers(!isLargeFileMode)
+            Self.configureUndo(for: textView, isLargeFileMode: isLargeFileMode)
+            nsView.setShowsLineNumbers(true)
         }
 
-        if textView.string != text {
+        if context.coordinator.shouldApplyDocumentText(text) {
             context.coordinator.isProgrammaticUpdate = true
             textView.string = text
             context.coordinator.isProgrammaticUpdate = false
+            context.coordinator.lastSyncedText = text
+            context.coordinator.hasUnsyncedLocalChanges = false
+            context.coordinator.lineIndex?.rebuild(text: textView.string)
             context.coordinator.highlightedRange = nil
             textView.setSelectedRange(NSRange(location: 0, length: 0))
             textView.scrollRangeToVisible(NSRange(location: 0, length: 0))
             if !isLargeFileMode, let lm = textView.layoutManager {
                 SyntaxHighlighter.shared.apply(to: lm, source: textView.string, language: language)
+            } else {
+                context.coordinator.scheduleHighlight()
             }
             context.coordinator.gutterView?.needsDisplay = true
         } else if context.coordinator.lastLanguage != language {
             context.coordinator.highlightedRange = nil
-            if !isLargeFileMode, let lm = textView.layoutManager {
+            if let lm = textView.layoutManager {
                 let visibleRange = context.coordinator.visibleCharacterRange()
                 SyntaxHighlighter.shared.apply(to: lm, source: textView.string, language: language, in: visibleRange)
             }
@@ -113,14 +131,24 @@ struct SyntaxTextView: NSViewRepresentable {
         var parent: SyntaxTextView
         weak var textView: NSTextView?
         weak var gutterView: LineNumberGutterView?
+        var lineIndex: LineNumberIndex?
         var isProgrammaticUpdate = false
         var isLargeFileMode = false
+        var hasUnsyncedLocalChanges = false
+        var lastSyncedText = ""
         var lastLanguage: SyntaxLanguage = .plainText
         private var pendingHighlight: DispatchWorkItem?
+        private var pendingTextSync: DispatchWorkItem?
+        private var textSyncGeneration = 0
+        private var pendingLineIndexEdit: PendingLineIndexEdit?
         fileprivate var highlightedRange: NSRange?
         private var boundsObserver: NSObjectProtocol?
         private var textObserver: NSObjectProtocol?
         private var selectionObserver: NSObjectProtocol?
+        private var documentSaveObserver: NSObjectProtocol?
+        private var appResignObserver: NSObjectProtocol?
+        private var windowWillCloseObserver: NSObjectProtocol?
+        private var keyDownMonitor: Any?
 
         init(_ parent: SyntaxTextView) {
             self.parent = parent
@@ -136,6 +164,20 @@ struct SyntaxTextView: NSViewRepresentable {
             if let selectionObserver {
                 NotificationCenter.default.removeObserver(selectionObserver)
             }
+            if let documentSaveObserver {
+                NotificationCenter.default.removeObserver(documentSaveObserver)
+            }
+            if let appResignObserver {
+                NotificationCenter.default.removeObserver(appResignObserver)
+            }
+            if let windowWillCloseObserver {
+                NotificationCenter.default.removeObserver(windowWillCloseObserver)
+            }
+            if let keyDownMonitor {
+                NSEvent.removeMonitor(keyDownMonitor)
+            }
+            pendingHighlight?.cancel()
+            pendingTextSync?.cancel()
         }
 
         func attachObservers(scrollView: NSScrollView) {
@@ -167,21 +209,117 @@ struct SyntaxTextView: NSViewRepresentable {
             ) { [weak self] _ in
                 self?.gutterView?.needsDisplay = true
             }
+
+            documentSaveObserver = NotificationCenter.default.addObserver(
+                forName: Notification.Name("NSDocumentWillSaveNotification"),
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                self?.flushPendingTextSync()
+            }
+
+            appResignObserver = NotificationCenter.default.addObserver(
+                forName: NSApplication.willResignActiveNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                self?.flushPendingTextSync()
+            }
+
+            windowWillCloseObserver = NotificationCenter.default.addObserver(
+                forName: NSWindow.willCloseNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] notification in
+                guard let self, let textView = self.textView else { return }
+                if notification.object as? NSWindow === textView.window {
+                    self.flushPendingTextSync()
+                }
+            }
+
+            keyDownMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+                if event.modifierFlags.contains(.command),
+                   event.charactersIgnoringModifiers?.lowercased() == "s" {
+                    self?.flushPendingTextSync()
+                }
+                return event
+            }
+        }
+
+        func textView(_ textView: NSTextView, shouldChangeTextIn affectedCharRange: NSRange, replacementString: String?) -> Bool {
+            if !isProgrammaticUpdate {
+                pendingLineIndexEdit = PendingLineIndexEdit(
+                    range: affectedCharRange,
+                    replacement: replacementString
+                )
+            }
+            return true
         }
 
         func textDidChange(_ notification: Notification) {
             guard !isProgrammaticUpdate, let textView else { return }
-            parent.text = textView.string
+            if let pendingLineIndexEdit, let replacement = pendingLineIndexEdit.replacement {
+                lineIndex?.applyEdit(
+                    range: pendingLineIndexEdit.range,
+                    replacement: replacement
+                )
+                self.pendingLineIndexEdit = nil
+            } else {
+                lineIndex?.rebuild(text: textView.string)
+                pendingLineIndexEdit = nil
+            }
+            syncDocumentText(from: textView)
             scheduleHighlight()
         }
 
-        private func scheduleHighlight() {
-            guard !isLargeFileMode else { return }
+        func shouldApplyDocumentText(_ text: String) -> Bool {
+            guard let textView else { return false }
+            if hasUnsyncedLocalChanges && text == lastSyncedText {
+                return false
+            }
+            return textView.string != text
+        }
+
+        func flushPendingTextSync() {
+            guard hasUnsyncedLocalChanges, let textView else { return }
+            pendingTextSync?.cancel()
+            pendingTextSync = nil
+            textSyncGeneration += 1
+            let latestText = textView.string
+            parent.text = latestText
+            lastSyncedText = latestText
+            hasUnsyncedLocalChanges = false
+        }
+
+        private func syncDocumentText(from textView: NSTextView) {
+            if isLargeFileMode {
+                hasUnsyncedLocalChanges = true
+                pendingTextSync?.cancel()
+                textSyncGeneration += 1
+                let generation = textSyncGeneration
+                let work = DispatchWorkItem { [weak self] in
+                    guard let self else { return }
+                    guard generation == self.textSyncGeneration else { return }
+                    self.flushPendingTextSync()
+                }
+                pendingTextSync = work
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: work)
+            } else {
+                pendingTextSync?.cancel()
+                pendingTextSync = nil
+                textSyncGeneration += 1
+                let latestText = textView.string
+                parent.text = latestText
+                lastSyncedText = latestText
+                hasUnsyncedLocalChanges = false
+            }
+        }
+
+        func scheduleHighlight() {
             pendingHighlight?.cancel()
             let work = DispatchWorkItem { [weak self] in
                 guard let self, let textView = self.textView, let lm = textView.layoutManager else { return }
                 let source = textView.string
-                guard SyntaxHighlighter.shared.shouldHighlight(textLength: (source as NSString).length) else { return }
                 let visibleRange = self.visibleCharacterRange()
                 self.highlightedRange = nil
                 SyntaxHighlighter.shared.apply(to: lm, source: source, language: self.parent.language, in: visibleRange)
@@ -195,11 +333,9 @@ struct SyntaxTextView: NSViewRepresentable {
         }
 
         private func applyScrollHighlightIfNeeded() {
-            guard !isLargeFileMode,
-                  let textView, let lm = textView.layoutManager else { return }
+            guard let textView, let lm = textView.layoutManager else { return }
             let source = textView.string
             let totalLength = (source as NSString).length
-            guard SyntaxHighlighter.shared.shouldHighlight(textLength: totalLength) else { return }
             guard let visibleRange = visibleCharacterRange() else { return }
 
             let needed = SyntaxHighlighter.shared.effectiveRange(for: visibleRange, totalLength: totalLength)
@@ -227,6 +363,11 @@ struct SyntaxTextView: NSViewRepresentable {
                   let textContainer = textView.textContainer else { return nil }
             let visibleGlyphRange = layoutManager.glyphRange(forBoundingRect: textView.visibleRect, in: textContainer)
             return layoutManager.characterRange(forGlyphRange: visibleGlyphRange, actualGlyphRange: nil)
+        }
+
+        private struct PendingLineIndexEdit {
+            let range: NSRange
+            let replacement: String?
         }
     }
 }
@@ -269,14 +410,16 @@ final class EditorContainerView: NSView {
 
 final class LineNumberGutterView: NSView {
     weak var textView: NSTextView?
+    private let lineIndex: LineNumberIndex
     private let font = NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
     private let textColor = NSColor.secondaryLabelColor
     private let backgroundColor = NSColor.textBackgroundColor
 
     override var isFlipped: Bool { true }
 
-    init(textView: NSTextView) {
+    init(textView: NSTextView, lineIndex: LineNumberIndex) {
         self.textView = textView
+        self.lineIndex = lineIndex
         super.init(frame: .zero)
         wantsLayer = true
     }
@@ -327,8 +470,7 @@ final class LineNumberGutterView: NSView {
             }
             drawnLineStarts.insert(lineStart)
 
-            let prefixRange = NSRange(location: 0, length: lineStart)
-            let lineNumber = 1 + countNewlines(in: fullText, range: prefixRange)
+            let lineNumber = lineIndex.lineNumber(at: lineStart)
 
             let label = "\(lineNumber)" as NSString
             let labelSize = label.size(withAttributes: attributes)
@@ -348,7 +490,7 @@ final class LineNumberGutterView: NSView {
                 if !extraRect.equalTo(.zero) {
                     let y = extraRect.minY + textView.textContainerOrigin.y - textView.visibleRect.minY
                     if y < bounds.maxY && y + extraRect.height > 0 {
-                        let lineNumber = 1 + countNewlines(in: fullText, range: NSRange(location: 0, length: lastLineStart))
+                        let lineNumber = lineIndex.lineNumber(at: lastLineStart)
                         let label = "\(lineNumber)" as NSString
                         let labelSize = label.size(withAttributes: attributes)
                         let x = bounds.width - labelSize.width - 8
@@ -359,23 +501,89 @@ final class LineNumberGutterView: NSView {
             }
         }
     }
+}
 
-    private func countNewlines(in text: NSString, range: NSRange) -> Int {
-        guard range.length > 0 else { return 0 }
+final class LineNumberIndex {
+    private var newlineLocations: [Int] = []
 
-        var count = 0
-        var searchRange = range
+    init(text: String) {
+        rebuild(text: text)
+    }
 
-        while true {
-            let found = text.range(of: "\n", options: [], range: searchRange)
-            if found.location == NSNotFound { break }
+    func rebuild(text: String) {
+        let nsText = text as NSString
+        newlineLocations.removeAll(keepingCapacity: true)
 
-            count += 1
+        var searchRange = NSRange(location: 0, length: nsText.length)
+        while searchRange.length > 0 {
+            let found = nsText.range(of: "\n", options: [], range: searchRange)
+            if found.location == NSNotFound {
+                break
+            }
+
+            newlineLocations.append(found.location)
+
             let next = found.location + found.length
-            if next >= NSMaxRange(range) { break }
-            searchRange = NSRange(location: next, length: NSMaxRange(range) - next)
+            searchRange = NSRange(location: next, length: nsText.length - next)
+        }
+    }
+
+    func applyEdit(range: NSRange, replacement: String) {
+        let replacementNewlineLocations = Self.newlineLocations(in: replacement, offsetBy: range.location)
+        let removedRangeEnd = NSMaxRange(range)
+        let lengthDelta = (replacement as NSString).length - range.length
+        let firstRemovedIndex = lowerBound(for: range.location)
+        let firstPreservedIndex = lowerBound(for: removedRangeEnd)
+
+        var updated: [Int] = []
+        updated.reserveCapacity(newlineLocations.count - (firstPreservedIndex - firstRemovedIndex) + replacementNewlineLocations.count)
+        updated.append(contentsOf: newlineLocations[..<firstRemovedIndex])
+        updated.append(contentsOf: replacementNewlineLocations)
+
+        for location in newlineLocations[firstPreservedIndex...] {
+            updated.append(location + lengthDelta)
         }
 
-        return count
+        newlineLocations = updated
+    }
+
+    func lineNumber(at characterLocation: Int) -> Int {
+        lowerBound(for: characterLocation) + 1
+    }
+
+    private static func newlineLocations(in text: String, offsetBy offset: Int) -> [Int] {
+        let nsText = text as NSString
+        var locations: [Int] = []
+        var searchRange = NSRange(location: 0, length: nsText.length)
+
+        while searchRange.length > 0 {
+            let found = nsText.range(of: "\n", options: [], range: searchRange)
+            if found.location == NSNotFound {
+                break
+            }
+
+            locations.append(offset + found.location)
+
+            let next = found.location + found.length
+            searchRange = NSRange(location: next, length: nsText.length - next)
+        }
+
+        return locations
+    }
+
+    private func lowerBound(for value: Int) -> Int {
+        var low = 0
+        var high = newlineLocations.count
+
+        while low < high {
+            let mid = (low + high) / 2
+            if newlineLocations[mid] < value {
+                low = mid + 1
+            } else {
+                high = mid
+            }
+        }
+
+        return low
     }
 }
