@@ -150,6 +150,10 @@ struct MarqueeApp: App {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var windowObserver: NSObjectProtocol?
+    private var configuredWindowIDs = Set<ObjectIdentifier>()
+    private let defaultDocumentWindowSize = NSSize(width: 960, height: 680)
+    private let minimumDocumentWindowSize = NSSize(width: 560, height: 360)
+    private let documentWindowAutosaveName = "MarqueeDocumentWindow"
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSWindow.allowsAutomaticWindowTabbing = true
@@ -160,13 +164,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             queue: .main
         ) { notification in
             guard let window = notification.object as? NSWindow else { return }
-            window.titlebarAppearsTransparent = true
-            window.styleMask.insert(.fullSizeContentView)
+            self.configure(window)
         }
 
         for window in NSApp.windows {
-            window.titlebarAppearsTransparent = true
-            window.styleMask.insert(.fullSizeContentView)
+            configure(window)
+        }
+    }
+
+    private func configure(_ window: NSWindow) {
+        window.titlebarAppearsTransparent = true
+        window.styleMask.insert(.fullSizeContentView)
+
+        let windowID = ObjectIdentifier(window)
+        guard !configuredWindowIDs.contains(windowID) else { return }
+        configuredWindowIDs.insert(windowID)
+
+        window.minSize = minimumDocumentWindowSize
+        window.setFrameAutosaveName(documentWindowAutosaveName)
+
+        if window.frame.width < minimumDocumentWindowSize.width ||
+           window.frame.height < minimumDocumentWindowSize.height {
+            window.setContentSize(defaultDocumentWindowSize)
+            window.center()
         }
     }
 }

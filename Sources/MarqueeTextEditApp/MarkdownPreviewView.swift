@@ -264,14 +264,14 @@ enum MarkdownRenderer {
             }
 
             // Ordered list
-            if let content = parseOrderedItem(trimmed) {
+            if let item = parseOrderedItem(trimmed) {
                 flush()
-                html += "<ol>\n<li>\(inlineFormat(content))</li>\n"
+                html += "<ol start=\"\(item.number)\">\n<li>\(inlineFormat(item.text))</li>\n"
                 i += 1
                 while i < lines.count {
                     let lt = lines[i].trimmingCharacters(in: .whitespaces)
-                    if let c = parseOrderedItem(lt) {
-                        html += "<li>\(inlineFormat(c))</li>\n"
+                    if let nextItem = parseOrderedItem(lt) {
+                        html += "<li>\(inlineFormat(nextItem.text))</li>\n"
                     } else {
                         break
                     }
@@ -322,14 +322,15 @@ enum MarkdownRenderer {
         return String(rest.dropFirst())
     }
 
-    private static func parseOrderedItem(_ trimmed: String) -> String? {
+    private static func parseOrderedItem(_ trimmed: String) -> (number: Int, text: String)? {
         guard let first = trimmed.first, first.isNumber else { return nil }
         guard let dotIdx = trimmed.firstIndex(where: { $0 == "." || $0 == ")" }) else { return nil }
         let prefix = trimmed[trimmed.startIndex..<dotIdx]
         guard prefix.allSatisfy(\.isNumber) else { return nil }
         let afterDot = trimmed[trimmed.index(after: dotIdx)...]
         guard afterDot.hasPrefix(" ") else { return nil }
-        return String(afterDot.dropFirst())
+        guard let number = Int(prefix) else { return nil }
+        return (number, String(afterDot.dropFirst()))
     }
 
     // MARK: Inline Formatting
