@@ -15,7 +15,7 @@ struct MarqueeApp: App {
         .commands {
             CommandGroup(after: .newItem) {
                 Button("New Tab") {
-                    NSDocumentController.shared.newDocument(nil)
+                    appDelegate.newDocumentTab()
                 }
                 .keyboardShortcut("t", modifiers: [.command])
 
@@ -24,6 +24,12 @@ struct MarqueeApp: App {
                 }
                 .keyboardShortcut("d", modifiers: [.command])
                 .disabled(duplicateHandler == nil)
+
+                Divider()
+
+                Button("Check for Updates...") {
+                    appDelegate.openUpdatesPage()
+                }
             }
 
             CommandGroup(after: .windowArrangement) {
@@ -154,6 +160,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let defaultDocumentWindowSize = NSSize(width: 960, height: 680)
     private let minimumDocumentWindowSize = NSSize(width: 560, height: 360)
     private let documentWindowAutosaveName = "MarqueeDocumentWindow"
+    private let updatesURL = URL(string: "https://github.com/ymolodtsov/marquee/releases/latest")!
+
+    func newDocumentTab() {
+        guard let sourceWindow = NSApp.keyWindow ?? NSApp.mainWindow else {
+            NSDocumentController.shared.newDocument(nil)
+            return
+        }
+
+        let existingWindowIDs = Set(NSApp.windows.map(ObjectIdentifier.init))
+        NSDocumentController.shared.newDocument(nil)
+
+        DispatchQueue.main.async {
+            guard let newWindow = self.newDocumentWindow(excluding: existingWindowIDs),
+                  newWindow !== sourceWindow else {
+                return
+            }
+
+            self.configure(newWindow)
+            sourceWindow.addTabbedWindow(newWindow, ordered: .above)
+            newWindow.makeKeyAndOrderFront(nil)
+        }
+    }
+
+    func openUpdatesPage() {
+        NSWorkspace.shared.open(updatesURL)
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSWindow.allowsAutomaticWindowTabbing = true
@@ -175,6 +207,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func configure(_ window: NSWindow) {
         window.titlebarAppearsTransparent = true
         window.styleMask.insert(.fullSizeContentView)
+        window.tabbingMode = .preferred
 
         let windowID = ObjectIdentifier(window)
         guard !configuredWindowIDs.contains(windowID) else { return }
@@ -187,6 +220,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
            window.frame.height < minimumDocumentWindowSize.height {
             window.setContentSize(defaultDocumentWindowSize)
             window.center()
+        }
+    }
+
+    private func newDocumentWindow(excluding existingWindowIDs: Set<ObjectIdentifier>) -> NSWindow? {
+        if let keyWindow = NSApp.keyWindow,
+           !existingWindowIDs.contains(ObjectIdentifier(keyWindow)) {
+            return keyWindow
+        }
+
+        return NSApp.windows.last { window in
+            !existingWindowIDs.contains(ObjectIdentifier(window))
         }
     }
 }
