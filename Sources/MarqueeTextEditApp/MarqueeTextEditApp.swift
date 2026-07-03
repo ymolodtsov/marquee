@@ -168,18 +168,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
-        let existingWindowIDs = Set(NSApp.windows.map(ObjectIdentifier.init))
-        NSDocumentController.shared.newDocument(nil)
+        do {
+            let document = try NSDocumentController.shared.openUntitledDocumentAndDisplay(false)
+            if document.windowControllers.isEmpty {
+                document.makeWindowControllers()
+            }
 
-        DispatchQueue.main.async {
-            guard let newWindow = self.newDocumentWindow(excluding: existingWindowIDs),
-                  newWindow !== sourceWindow else {
+            guard let newWindow = document.windowControllers.compactMap(\.window).first else {
+                document.showWindows()
                 return
             }
 
-            self.configure(newWindow)
+            configure(newWindow)
             sourceWindow.addTabbedWindow(newWindow, ordered: .above)
             newWindow.makeKeyAndOrderFront(nil)
+        } catch {
+            NSDocumentController.shared.newDocument(nil)
         }
     }
 
@@ -223,14 +227,4 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func newDocumentWindow(excluding existingWindowIDs: Set<ObjectIdentifier>) -> NSWindow? {
-        if let keyWindow = NSApp.keyWindow,
-           !existingWindowIDs.contains(ObjectIdentifier(keyWindow)) {
-            return keyWindow
-        }
-
-        return NSApp.windows.last { window in
-            !existingWindowIDs.contains(ObjectIdentifier(window))
-        }
-    }
 }
