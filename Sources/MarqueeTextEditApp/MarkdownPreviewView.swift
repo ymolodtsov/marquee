@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import WebKit
 
@@ -7,7 +8,12 @@ struct MarkdownPreviewView: NSViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator() }
 
     func makeNSView(context: Context) -> WKWebView {
-        let webView = WKWebView(frame: .zero)
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = .nonPersistent()
+        configuration.defaultWebpagePreferences.allowsContentJavaScript = false
+
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        webView.navigationDelegate = context.coordinator
         webView.loadHTMLString(MarkdownRenderer.render(text), baseURL: nil)
         context.coordinator.lastText = text
         return webView
@@ -19,8 +25,26 @@ struct MarkdownPreviewView: NSViewRepresentable {
         context.coordinator.lastText = text
     }
 
-    final class Coordinator {
+    final class Coordinator: NSObject, WKNavigationDelegate {
         var lastText: String?
+
+        func webView(
+            _ webView: WKWebView,
+            decidePolicyFor navigationAction: WKNavigationAction,
+            decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
+        ) {
+            guard navigationAction.navigationType == .linkActivated else {
+                decisionHandler(.allow)
+                return
+            }
+
+            decisionHandler(.cancel)
+
+            guard let url = navigationAction.request.url,
+                  let scheme = url.scheme?.lowercased(),
+                  ["https", "http", "mailto"].contains(scheme) else { return }
+            NSWorkspace.shared.open(url)
+        }
     }
 }
 
@@ -369,9 +393,7 @@ enum MarkdownRenderer {
 
     private static func formatPlain(_ text: String) -> String {
         var r = text
-        r = r.replacingOccurrences(of: "!\\[([^\\]]*)\\]\\(([^)]+)\\)",
-                                   with: "<img src=\"$2\" alt=\"$1\">",
-                                   options: .regularExpression)
+        r = replaceRemoteImages(in: r)
         r = r.replacingOccurrences(of: "\\[([^\\]]*)\\]\\(([^)]+)\\)",
                                    with: "<a href=\"$2\">$1</a>",
                                    options: .regularExpression)
@@ -391,6 +413,32 @@ enum MarkdownRenderer {
                                    with: "<del>$1</del>",
                                    options: .regularExpression)
         return r
+    }
+
+    private static func replaceRemoteImages(in text: String) -> String {
+        let pattern = #"!\[([^\]]*)\]\(\s*<?(https://[^\s>]+)>?(?:\s+&quot;[^&]*&quot;)?\s*\)"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
+            return text
+        }
+
+        var result = text
+        let matches = regex.matches(in: text, range: NSRange(text.startIndex..., in: text))
+        for match in matches.reversed() {
+            guard let altRange = Range(match.range(at: 1), in: text),
+                  let urlRange = Range(match.range(at: 2), in: text) else { continue }
+
+            let escapedURL = String(text[urlRange])
+            let validationURL = escapedURL.replacingOccurrences(of: "&amp;", with: "&")
+            guard let components = URLComponents(string: validationURL),
+                  components.scheme?.lowercased() == "https",
+                  components.host?.isEmpty == false else { continue }
+
+            let alt = String(text[altRange])
+            let image = "<img src=\"\(escapedURL)\" alt=\"\(alt)\" loading=\"lazy\" decoding=\"async\" referrerpolicy=\"no-referrer\">"
+            guard let resultRange = Range(match.range, in: result) else { continue }
+            result.replaceSubrange(resultRange, with: image)
+        }
+        return result
     }
 
     // MARK: Helpers
@@ -417,8 +465,18 @@ enum MarkdownRenderer {
         <html>
         <head>
         <meta charset="utf-8">
+        <meta name="referrer" content="no-referrer">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https:; style-src 'unsafe-inline'; script-src 'none'; connect-src 'none'; media-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
         <style>
-        :root { color-scheme: light dark; }
+        :root {
+            color-scheme: light dark;
+            --background-color: #ffffff;
+            --text-color: #1d1d1f;
+            --link-color: #0066cc;
+            --quote-border-color: #0066cc;
+            --quote-text-color: #6e6e73;
+            --image-outline-color: rgba(0, 0, 0, 0.1);
+        }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
             font-size: 15px;
@@ -426,21 +484,9 @@ enum MarkdownRenderer {
             max-width: 720px;
             margin: 0 auto;
             padding: 32px 40px;
-            color: #1d1d1f;
-            background: #ffffff;
+            color: var(--text-color);
+            background: var(--background-color);
             -webkit-font-smoothing: antialiased;
-        }
-        @media (prefers-color-scheme: dark) {
-            body { color: #f5f5f7; background: #1d1d1f; }
-            a { color: #6cb4ff; }
-            blockquote { border-color: #4a9eff; color: #a1a1a6; }
-            th { background: rgba(255,255,255,0.04); }
-            th, td { border-color: rgba(255,255,255,0.12); }
-            .frontmatter { background: rgba(255,255,255,0.04); }
-            .fm-type { background: rgba(255,255,255,0.08); }
-            pre { background: rgba(255,255,255,0.05); }
-            code { background: rgba(255,255,255,0.08); }
-            hr { border-color: rgba(255,255,255,0.12); }
         }
         h1 { font-size: 2em; font-weight: 700; margin: 1.2em 0 0.5em; line-height: 1.2; }
         h2 { font-size: 1.5em; font-weight: 600; margin: 1.1em 0 0.4em; line-height: 1.3; }
@@ -448,7 +494,7 @@ enum MarkdownRenderer {
         h4 { font-size: 1.1em; font-weight: 600; margin: 0.9em 0 0.25em; }
         h5, h6 { font-size: 1em; font-weight: 600; margin: 0.8em 0 0.2em; }
         p { margin: 0.8em 0; }
-        a { color: #0066cc; text-decoration: none; }
+        a { color: var(--link-color); text-decoration: none; }
         a:hover { text-decoration: underline; }
         code {
             font-family: 'SF Mono', Menlo, Consolas, monospace;
@@ -467,16 +513,23 @@ enum MarkdownRenderer {
         }
         pre code { background: none; padding: 0; font-size: 0.85em; }
         blockquote {
-            border-left: 3px solid #0066cc;
+            border-left: 3px solid var(--quote-border-color);
             margin: 1em 0;
             padding: 0.25em 1em;
-            color: #6e6e73;
+            color: var(--quote-text-color);
         }
         blockquote p { margin: 0.4em 0; }
         table { border-collapse: collapse; width: 100%; margin: 1em 0; font-size: 0.95em; }
         th, td { border: 1px solid rgba(128,128,128,0.2); padding: 8px 12px; }
         th { background: rgba(128,128,128,0.05); font-weight: 600; }
-        img { max-width: 100%; border-radius: 6px; margin: 0.5em 0; }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 6px;
+            margin: 0.5em 0;
+            outline: 1px solid var(--image-outline-color);
+            outline-offset: -1px;
+        }
         hr { border: none; border-top: 1px solid rgba(128,128,128,0.2); margin: 2em 0; }
         ul, ol { padding-left: 1.5em; margin: 0.6em 0; }
         li { margin: 0.25em 0; }
@@ -506,6 +559,23 @@ enum MarkdownRenderer {
             vertical-align: middle;
         }
         del { opacity: 0.6; }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --background-color: #1d1d1f;
+                --text-color: #f5f5f7;
+                --link-color: #6cb4ff;
+                --quote-border-color: #4a9eff;
+                --quote-text-color: #a1a1a6;
+                --image-outline-color: rgba(255, 255, 255, 0.1);
+            }
+            th { background: rgba(255,255,255,0.04); }
+            th, td { border-color: rgba(255,255,255,0.12); }
+            .frontmatter { background: rgba(255,255,255,0.04); }
+            .fm-type { background: rgba(255,255,255,0.08); }
+            pre { background: rgba(255,255,255,0.05); }
+            code { background: rgba(255,255,255,0.08); }
+            hr { border-color: rgba(255,255,255,0.12); }
+        }
         </style>
         </head>
         <body>
