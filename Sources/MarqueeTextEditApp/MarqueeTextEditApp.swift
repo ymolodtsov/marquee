@@ -13,11 +13,21 @@ struct MarqueeApp: App {
             EditorView(document: file.$document, fileURL: file.fileURL)
         }
         .commands {
-            CommandGroup(after: .newItem) {
+            CommandGroup(replacing: .newItem) {
+                Button("New Document") {
+                    appDelegate.newDocumentTab()
+                }
+                .keyboardShortcut("n", modifiers: [.command])
+
                 Button("New Tab") {
                     appDelegate.newDocumentTab()
                 }
                 .keyboardShortcut("t", modifiers: [.command])
+
+                Button("New Window") {
+                    appDelegate.newDocumentWindow()
+                }
+                .keyboardShortcut("n", modifiers: [.command, .option])
 
                 Button("Duplicate") {
                     duplicateHandler?.action()
@@ -155,8 +165,10 @@ struct MarqueeApp: App {
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private var windowObserver: NSObjectProtocol?
+    private var windowObservers: [NSObjectProtocol] = []
     private var configuredWindowIDs = Set<ObjectIdentifier>()
+    private var standaloneWindowIDs = Set<ObjectIdentifier>()
+    private weak var tabHostWindow: NSWindow?
     private let defaultDocumentWindowSize = NSSize(width: 960, height: 680)
     private let minimumDocumentWindowSize = NSSize(width: 560, height: 360)
     private let documentWindowAutosaveName = "MarqueeDocumentWindow"
@@ -187,6 +199,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    func newDocumentWindow() {
+        do {
+            let document = try NSDocumentController.shared.openUntitledDocumentAndDisplay(false)
+            if document.windowControllers.isEmpty {
+                document.makeWindowControllers()
+            }
+
+            guard let newWindow = document.windowControllers.compactMap(\.window).first else {
+                document.showWindows()
+                return
+            }
+
+            configure(newWindow)
+            standaloneWindowIDs.insert(ObjectIdentifier(newWindow))
+            newWindow.makeKeyAndOrderFront(nil)
+            tabHostWindow = newWindow
+        } catch {
+            NSDocumentController.shared.newDocument(nil)
+        }
+    }
+
     func openUpdatesPage() {
         NSWorkspace.shared.open(updatesURL)
     }
@@ -194,17 +227,51 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSWindow.allowsAutomaticWindowTabbing = true
 
-        windowObserver = NotificationCenter.default.addObserver(
-            forName: NSWindow.didBecomeMainNotification,
+        let center = NotificationCenter.default
+        for notificationName in [NSWindow.didBecomeMainNotification, NSWindow.didBecomeKeyNotification] {
+            windowObservers.append(center.addObserver(
+                forName: notificationName,
+                object: nil,
+                queue: .main
+            ) { [weak self] notification in
+                guard let self, let window = notification.object as? NSWindow else { return }
+                self.handleDocumentWindowActivation(window)
+            })
+        }
+
+        windowObservers.append(center.addObserver(
+            forName: NSWindow.willCloseNotification,
             object: nil,
             queue: .main
-        ) { notification in
-            guard let window = notification.object as? NSWindow else { return }
-            self.configure(window)
-        }
+        ) { [weak self] notification in
+            guard let self, let window = notification.object as? NSWindow else { return }
+            if self.tabHostWindow === window {
+                self.tabHostWindow = self.tabTargetWindow(excluding: window)
+            }
+            self.standaloneWindowIDs.remove(ObjectIdentifier(window))
+        })
 
         for window in NSApp.windows {
             configure(window)
+            if isDocumentLikeWindow(window) {
+                tabHostWindow = window
+            }
+        }
+    }
+
+    private func handleDocumentWindowActivation(_ window: NSWindow) {
+        configure(window)
+        let didJoinExistingTabs = tabDocumentWindowIfNeeded(window)
+
+        if !didJoinExistingTabs {
+            DispatchQueue.main.async { [weak self, weak window] in
+                guard let self, let window else { return }
+                _ = self.tabDocumentWindowIfNeeded(window)
+            }
+        }
+
+        if isDocumentLikeWindow(window) {
+            tabHostWindow = window
         }
     }
 
@@ -227,4 +294,49 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    @discardableResult
+    private func tabDocumentWindowIfNeeded(_ window: NSWindow) -> Bool {
+        guard isDocumentLikeWindow(window),
+              !standaloneWindowIDs.contains(ObjectIdentifier(window)),
+              canMoveIntoExistingTabGroup(window),
+              let sourceWindow = tabTargetWindow(excluding: window) else {
+            return false
+        }
+
+        configure(sourceWindow)
+        sourceWindow.addTabbedWindow(window, ordered: .above)
+        window.makeKeyAndOrderFront(nil)
+        tabHostWindow = window
+        return true
+    }
+
+    private func tabTargetWindow(excluding window: NSWindow) -> NSWindow? {
+        if let tabHostWindow,
+           tabHostWindow !== window,
+           isDocumentLikeWindow(tabHostWindow) {
+            return tabHostWindow
+        }
+
+        return NSApp.windows.reversed().first { candidate in
+            candidate !== window && isDocumentLikeWindow(candidate)
+        }
+    }
+
+    private func canMoveIntoExistingTabGroup(_ window: NSWindow) -> Bool {
+        guard let tabGroup = window.tabGroup else { return true }
+        return tabGroup.windows.count <= 1
+    }
+
+    private func isDocumentLikeWindow(_ window: NSWindow) -> Bool {
+        guard !(window is NSPanel),
+              window.isVisible,
+              window.canBecomeMain,
+              window.styleMask.contains(.titled),
+              window.styleMask.contains(.closable),
+              window.styleMask.contains(.resizable) else {
+            return false
+        }
+
+        return true
+    }
 }
