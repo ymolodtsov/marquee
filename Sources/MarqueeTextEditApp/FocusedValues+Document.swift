@@ -13,6 +13,9 @@ struct PreviewHandler {
     let isMarkdown: Bool
     let isShowingPreview: Bool
     let togglePreview: () -> Void
+    let showSearch: () -> Void
+    let findNext: () -> Void
+    let findPrevious: () -> Void
 }
 
 private struct DuplicateDocumentHandlerKey: FocusedValueKey {

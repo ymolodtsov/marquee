@@ -4,6 +4,10 @@ import WebKit
 
 struct MarkdownPreviewView: NSViewRepresentable {
     let text: String
+    let searchQuery: String
+    let searchRequestID: Int
+    let searchBackwards: Bool
+    let onFindResult: (Bool?) -> Void
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -20,13 +24,75 @@ struct MarkdownPreviewView: NSViewRepresentable {
     }
 
     func updateNSView(_ webView: WKWebView, context: Context) {
-        guard text != context.coordinator.lastText else { return }
-        webView.loadHTMLString(MarkdownRenderer.render(text), baseURL: nil)
-        context.coordinator.lastText = text
+        context.coordinator.onFindResult = onFindResult
+
+        let searchChanged = searchQuery != context.coordinator.lastSearchQuery
+            || searchRequestID != context.coordinator.lastSearchRequestID
+            || searchBackwards != context.coordinator.lastSearchBackwards
+
+        if text != context.coordinator.lastText {
+            context.coordinator.pendingSearch = SearchRequest(
+                query: searchQuery,
+                requestID: searchRequestID,
+                backwards: searchBackwards
+            )
+            webView.loadHTMLString(MarkdownRenderer.render(text), baseURL: nil)
+            context.coordinator.lastText = text
+        } else if searchChanged {
+            context.coordinator.find(
+                SearchRequest(
+                    query: searchQuery,
+                    requestID: searchRequestID,
+                    backwards: searchBackwards
+                ),
+                in: webView
+            )
+        }
+    }
+
+    struct SearchRequest: Equatable {
+        let query: String
+        let requestID: Int
+        let backwards: Bool
     }
 
     final class Coordinator: NSObject, WKNavigationDelegate {
         var lastText: String?
+        var lastSearchQuery = ""
+        var lastSearchRequestID = 0
+        var lastSearchBackwards = false
+        var pendingSearch: SearchRequest?
+        var onFindResult: (Bool?) -> Void = { _ in }
+
+        func find(_ request: SearchRequest, in webView: WKWebView) {
+            lastSearchQuery = request.query
+            lastSearchRequestID = request.requestID
+            lastSearchBackwards = request.backwards
+
+            let configuration = WKFindConfiguration()
+            configuration.backwards = request.backwards
+            configuration.caseSensitive = false
+            configuration.wraps = true
+
+            guard !request.query.isEmpty else {
+                webView.find("", configuration: configuration) { _ in }
+                return
+            }
+
+            webView.find(request.query, configuration: configuration) { [weak self] result in
+                guard let self,
+                      self.lastSearchQuery == request.query,
+                      self.lastSearchRequestID == request.requestID,
+                      self.lastSearchBackwards == request.backwards else { return }
+                self.onFindResult(result.matchFound)
+            }
+        }
+
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            guard let pendingSearch else { return }
+            self.pendingSearch = nil
+            find(pendingSearch, in: webView)
+        }
 
         func webView(
             _ webView: WKWebView,

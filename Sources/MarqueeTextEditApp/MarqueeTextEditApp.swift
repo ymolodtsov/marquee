@@ -130,6 +130,20 @@ struct MarqueeApp: App {
     }
 
     private func performTextFinderAction(_ action: NSTextFinder.Action) {
+        if previewHandler?.isShowingPreview == true {
+            switch action {
+            case .showFindInterface, .showReplaceInterface:
+                previewHandler?.showSearch()
+            case .nextMatch:
+                previewHandler?.findNext()
+            case .previousMatch:
+                previewHandler?.findPrevious()
+            default:
+                break
+            }
+            return
+        }
+
         let sender = NSMenuItem()
         sender.tag = action.rawValue
 
