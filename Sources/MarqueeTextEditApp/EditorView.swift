@@ -83,7 +83,7 @@ struct EditorView: View {
                 selectedLanguage = language
             }
         ))
-        .focusedValue(\.previewHandler, PreviewHandler(
+        .focusedSceneValue(\.previewHandler, PreviewHandler(
             isMarkdown: selectedLanguage == .markdown,
             isShowingPreview: showingPreview,
             togglePreview: { showingPreview.toggle() },
